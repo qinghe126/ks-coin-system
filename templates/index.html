@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快手金币统计系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --dark-color: #1f2937;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--dark-color) 0%, #111827 100%);
+            min-height: calc(100vh - 56px);
+            padding: 0;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sidebar .nav-link {
+            color: #d1d5db;
+            padding: 15px 20px;
+            margin: 0;
+            border-radius: 0;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-left-color: var(--primary-color);
+        }
+        
+        .sidebar .nav-link.active {
+            background: linear-gradient(90deg, rgba(102, 126, 234, 0.2) 0%, transparent 100%);
+            color: white;
+            border-left-color: var(--primary-color);
+        }
+        
+        .sidebar .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+        }
+        
+        .main-content {
+            padding: 20px;
+            background-color: #f8fafc;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 24px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            border-radius: 15px 15px 0 0 !important;
+            padding: 20px 25px;
+        }
+        
+        .card-header h5 {
+            margin: 0;
+            font-weight: 700;
+            color: #1f2937;
+        }
+        
+        .card-header h5 i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .stat-card .card-body {
+            padding: 25px;
+        }
+        
+        .stat-card h5 {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        
+        .stat-card h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 5px;
+        }
+        
+        .account-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary-color);
+            margin-bottom: 16px;
+        }
+        
+        .account-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .below-threshold {
+            border-left-color: var(--danger-color);
+            background-color: #fef2f2 !important;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            transform: translateY(-2px);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+        
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+        
+        .record-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+        
+        .record-item:hover {
+            background-color: #f8fafc;
+        }
+        
+        .record-item:last-child {
+            border-bottom: none;
+        }
+        
+        .record-badge {
+            font-size: 0.8rem;
+            padding: 5px 10px;
+            border-radius: 20px;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 10px 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .tab-content {
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .badge {
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+        
+        .alert {
+            border: none;
+            border-radius: 10px;
+            padding: 15px 20px;
+        }
+        
+        .system-info {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .accordion-button:not(.collapsed) {
+            background-color: #f8fafc;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        
+        .accordion-button:focus {
+            box-shadow: none;
+            border-color: var(--primary-color);
+        }
+        
+        .var-name-history {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .var-name-item {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            padding: 8px 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .var-name-item:last-child {
+            border-bottom: none;
+        }
+        
+        .var-name-text {
+            flex: 1;
+            cursor: pointer;
+        }
+        
+        .var-name-text:hover {
+            color: var(--primary-color);
+        }
+        
+        .ratio-info {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-coins me-2"></i>快手金币统计系统
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-user-circle me-1"></i> {{ session.username }}
+                </span>
+                <a class="btn btn-outline-light btn-sm" href="/logout">
+                    <i class="fas fa-sign-out-alt me-1"></i> 退出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- 侧边栏 -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <ul class="nav flex-column pt-3">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-tab="query">
+                            <i class="fas fa-search"></i> 账号查询
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="qinglong">
+                            <i class="fas fa-dragon"></i> 青龙配置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-tab="history">
+                            <i class="fas fa-history"></i> 查询历史
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- 系统信息 -->
+                <div class="px-3 mt-4">
+                    <div class="system-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>系统信息</h6>
+                        <small>版本: v2.2</small><br>
+                        <small>状态: <span class="badge bg-success">运行中</span></small><br>
+                        <small>更新: 2024年12月</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主内容区 -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- 查询页面 -->
+                <div id="query-tab" class="tab-content">
+                    <!-- 系统状态卡片 -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card bg-light border-0">
+                                <div class="card-body py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h6 class="mb-0"><i class="fas fa-rocket me-2 text-primary"></i>快手金币统计系统 v2.2</h6>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <small class="text-muted">最后更新: 2024年12月</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-cookie"></i> 账号Cookie输入</h5>
+                                </div>
+                                <div class="card-body">
+                                    <textarea class="form-control" id="cookiesInput" rows="10" 
+                                              placeholder="请输入快手账号Cookie，支持多种格式：&#10;&#10;格式1: 备注#cookie&#10;格式2: 备注@cookie@salt@user-agent&#10;格式3: 直接输入cookie内容&#10;&#10;多个账号请换行或用 & 符号分隔"></textarea>
+                                    <div class="mt-3">
+                                        <button class="btn btn-primary me-2" onclick="queryAccounts()">
+                                            <i class="fas fa-play-circle me-1"></i> 开始查询
+                                        </button>
+                                        <button class="btn btn-outline-secondary" onclick="clearInput()">
+                                            <i class="fas fa-trash-alt me-1"></i> 清空
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="ratio-info">
+                                <h6><i class="fas fa-exchange-alt me-2"></i>金币兑换比例</h6>
+                                <h4>10000金币 = 1元</h4>
+                                <small>固定比例，无需设置</small>
+                            </div>
+
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-sliders-h"></i> 查询参数设置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">金币阈值</label>
+                                        <input type="number" class="form-control" id="coinThreshold" value="10000">
+                                        <div class="form-text text-muted">今日金币低于此值的账号会标红显示</div>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <small><i class="fas fa-lightbulb me-1"></i> 提示: 今日金币低于阈值的账号会以红色边框标识</small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 按变量名称导入 -->
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-filter"></i> 按变量名称导入</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">变量名称</label>
+                                        <div class="input-group mb-2">
+                                            <input type="text" class="form-control" id="varNameInput" placeholder="输入青龙变量名称">
+                                            <button class="btn btn-success" type="button" onclick="saveVarName()">
+                                                <i class="fas fa-save"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text text-muted">精确匹配青龙环境变量名称</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">保存的变量名称</label>
+                                        <div class="var-name-history card" id="varNameHistory">
+                                            <div class="card-body p-0">
+                                                <div class="text-center py-3 text-muted" id="emptyVarNames">
+                                                    <i class="fas fa-inbox me-1"></i>暂无保存的变量名称
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button class="btn btn-info w-100 mb-2" onclick="loadQinglongAccountsByName()">
+                                        <i class="fas fa-download me-1"></i> 导入指定变量
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 汇总信息 -->
+                    <div id="summarySection" style="display: none;">
+                        <div class="row mb-4">
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-users me-1"></i> 总账号数</h5>
+                                        <h2 id="totalAccounts">0</h2>
+                                        <p class="mb-0">成功: <span id="successAccounts">0</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-coins me-1"></i> 今日总金币</h5>
+                                        <h2 id="totalTodayCoin">0</h2>
+                                        <p class="mb-0">所有账号汇总</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-money-bill-wave me-1"></i> 今日总金额</h5>
+                                        <h2 id="totalTodayMoney">0.00</h2>
+                                        <p class="mb-0">10000:1换算</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card stat-card">
+                                    <div class="card-body text-center">
+                                        <h5><i class="fas fa-clock me-1"></i> 查询时间</h5>
+                                        <h4 id="queryTime">-</h4>
+                                        <button class="btn btn-light btn-sm" onclick="downloadExcel()">
+                                            <i class="fas fa-file-excel me-1"></i> 下载报表
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 查询结果 -->
+                        <div id="resultsSection"></div>
+                    </div>
+
+                    <!-- 加载中 -->
+                    <div id="loadingSection" class="loading">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">查询中...</span>
+                        </div>
+                        <p class="mt-3 text-muted">正在查询账号数据，请稍候...</p>
+                        <div class="progress mt-3" style="height: 6px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 青龙配置页面 -->
+                <div id="qinglong-tab" class="tab-content" style="display: none;">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-dragon"></i> 青龙面板配置</h5>
+                                </div>
+                                <div class="card-body">
+                                    <form id="qinglongForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">青龙面板地址</label>
+                                            <input type="url" class="form-control" id="ql_url" 
+                                                   placeholder="http://IP:端口 或 https://域名" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">备注名称</label>
+                                            <input type="text" class="form-control" id="ql_remark" 
+                                                   placeholder="为这个配置起个名字">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Client ID</label>
+                                            <input type="text" class="form-control" id="client_id" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Client Secret</label>
+                                            <input type="text" class="form-control" id="client_secret" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <button type="submit" class="btn btn-primary me-2">
+                                                <i class="fas fa-save me-1"></i> 保存配置
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info" onclick="testQinglongConnection()">
+                                                <i class="fas fa-plug me-1"></i> 测试连接
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div id="qinglongStatus" class="mt-3"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> 配置说明</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="alert alert-warning">
+                                        <h6><i class="fas fa-exclamation-triangle me-2"></i>配置前须知</h6>
+                                        <small>请确保青龙面板已正确安装并可以正常访问</small>
+                                    </div>
+                                    
+                                    <ol class="list-group list-group-numbered">
+                                        <li class="list-group-item border-0 px-0">登录青龙面板，进入"系统设置" - "应用设置"</li>
+                                        <li class="list-group-item border-0 px-0">点击"新建应用"，填写应用名称（如：金币统计）</li>
+                                        <li class="list-group-item border-0 px-0">复制生成的 Client ID 和 Client Secret 到上方表单</li>
+                                        <li class="list-group-item border-0 px-0">在"权限配置"中勾选"环境变量"的读写权限</li>
+                                        <li class="list-group-item border-0 px-0">保存配置后即可在查询页面从青龙导入账号</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 历史记录页面 -->
+                <div id="history-tab" class="tab-content" style="display: none;">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0"><i class="fas fa-history"></i> 查询历史</h5>
+                            <button class="btn btn-outline-secondary btn-sm" onclick="loadHistory()">
+                                <i class="fas fa-sync-alt me-1"></i> 刷新
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="historyContent">
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-history fa-3x mb-3"></i>
+                                    <p>暂无查询历史记录</p>
+                                    <small>执行查询后，历史记录将显示在这里</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+            setupTabNavigation();
+            loadHistory();
+            loadQinglongConfig();
+            loadVarNames();
+        });
+
+        // 加载配置
+        function loadConfig() {
+            fetch('/get_config')
+                .then(r => {
+                    if (!r.ok) throw new Error('Network response was not ok');
+                    return r.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('coinThreshold').value = data.default_threshold;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载配置失败:', error);
+                    alert('加载系统配置失败，请刷新页面重试');
+                });
+        }
+
+        // 设置标签页导航
+        function setupTabNavigation() {
+            document.querySelectorAll('.sidebar .nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // 更新活动状态
+                    document.querySelectorAll('.sidebar .nav-link').forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 显示对应的内容
+                    const tab = this.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.style.display = 'none';
+                    });
+                    document.getElementById(tab + '-tab').style.display = 'block';
+                    
+                    // 特殊处理：刷新历史记录页面
+                    if (tab === 'history') {
+                        loadHistory();
+                    }
+                });
+            });
+        }
+
+        // 查询账号
+        function queryAccounts() {
+            const cookies = document.getElementById('cookiesInput').value;
+            const coinThreshold = document.getElementById('coinThreshold').value;
+
+            if (!cookies.trim()) {
+                alert('请输入Cookie数据');
+                return;
+            }
+
+            // 显示加载中
+            document.getElementById('loadingSection').style.display = 'block';
+            document.getElementById('summarySection').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('cookies', cookies);
+            formData.append('coin_threshold', coinThreshold);
+
+            fetch('/query', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    alert('查询失败: ' + data.message);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').style.display = 'none';
+                console.error('查询异常:', error);
+                alert('查询异常: ' + error.message);
+            });
+        }
+
+        // 显示结果
+        function displayResults(data) {
+            // 显示汇总信息
+            document.getElementById('summarySection').style.display = 'block';
+            document.getElementById('totalAccounts').textContent = data.summary.total_accounts;
+            document.getElementById('successAccounts').textContent = data.summary.success_accounts;
+            document.getElementById('totalTodayCoin').textContent = data.summary.total_today_coin.toLocaleString();
+            document.getElementById('totalTodayMoney').textContent = data.summary.total_today_money.toFixed(2);
+            document.getElementById('queryTime').textContent = new Date().toLocaleString();
+
+            // 显示详细结果 - 使用折叠方式
+            let html = '<h4 class="mb-3"><i class="fas fa-list-alt me-2"></i>账号详情</h4>';
+            
+            // 创建折叠容器
+            html += '<div class="accordion" id="resultsAccordion">';
+            
+            data.results.forEach((result, index) => {
+                const accordionId = `accordion-${index}`;
+                const collapseId = `collapse-${index}`;
+                
+                if (result.success) {
+                    const isBelowThreshold = result.today_coin < data.summary.coin_threshold;
+                    
+                    html += `
+                        <div class="accordion-item ${isBelowThreshold ? 'below-threshold' : ''}">
+                            <h2 class="accordion-header" id="heading-${index}">
+                                <button class="accordion-button ${index === 0 ? '' : 'collapsed'}" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#${collapseId}" 
+                                        aria-expanded="${index === 0 ? 'true' : 'false'}" aria-controls="${collapseId}">
+                                    <div class="d-flex justify-content-between align-items-center w-100 me-3">
+                                        <div>
+                                            <span class="fw-bold">${result.nickname}</span>
+                                            <span class="badge bg-secondary ms-2">${result.remark}</span>
+                                            ${isBelowThreshold ? '<span class="badge bg-danger ms-1"><i class="fas fa-exclamation-triangle me-1"></i>低于阈值</span>' : ''}
+                                        </div>
+                                        <div class="text-end">
+                                            <small class="text-muted me-3">今日金币: ${result.today_coin.toLocaleString()}</small>
+                                            <small class="text-muted">≈${result.today_money}元</small>
+                                        </div>
+                                    </div>
+                                </button>
+                            </h2>
+                            <div id="${collapseId}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
+                                 aria-labelledby="heading-${index}" data-bs-parent="#resultsAccordion">
+                                <div class="accordion-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0"><i class="fas fa-id-card me-2"></i>账号信息</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td><strong>用户ID:</strong></td>
+                                                            <td>${result.user_id}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>昵称:</strong></td>
+                                                            <td>${result.nickname}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>备注:</strong></td>
+                                                            <td>${result.remark}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>兑换模式:</strong></td>
+                                                            <td><span class="badge ${result.exchange_mode === '自动兑换' ? 'bg-success' : 'bg-warning'}">${result.exchange_mode}</span></td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0"><i class="fas fa-coins me-2"></i>金币统计</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td><strong>总金币:</strong></td>
+                                                            <td class="text-end">${result.coin_balance.toLocaleString()}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>今日金币:</strong></td>
+                                                            <td class="text-end text-warning">${result.today_coin.toLocaleString()}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>昨日金币:</strong></td>
+                                                            <td class="text-end text-info">${result.yesterday_coin.toLocaleString()}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>现金余额:</strong></td>
+                                                            <td class="text-end text-success">${result.cash_balance}元</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>累计总额:</strong></td>
+                                                            <td class="text-end text-primary">${result.total_balance}元</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0"><i class="fas fa-history me-2"></i>最近金币记录</h6>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    ${result.recent_coin_records && result.recent_coin_records.length > 0 ? 
+                                                        result.recent_coin_records.map(record => 
+                                                            `<div class="record-item d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <small class="text-muted">${record.time}</small>
+                                                                    <br>
+                                                                    <small>${record.type}</small>
+                                                                </div>
+                                                                <span class="badge bg-success record-badge">${record.display}</span>
+                                                            </div>`
+                                                        ).join('') : 
+                                                        '<div class="text-center py-3 text-muted"><i class="fas fa-inbox me-1"></i>无最近金币记录</div>'
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card">
+                                                <div class="card-header bg-light">
+                                                    <h6 class="mb-0"><i class="fas fa-money-bill-wave me-2"></i>最近现金记录</h6>
+                                                </div>
+                                                <div class="card-body p-0">
+                                                    ${result.recent_cash_records && result.recent_cash_records.length > 0 ? 
+                                                        result.recent_cash_records.map(record => {
+                                                            const badgeClass = record.amount > 0 ? 'bg-success' : 'bg-danger';
+                                                            return `<div class="record-item d-flex justify-content-between align-items-center">
+                                                                <div>
+                                                                    <small class="text-muted">${record.time}</small>
+                                                                    <br>
+                                                                    <small>${record.type}</small>
+                                                                </div>
+                                                                <span class="badge ${badgeClass} record-badge">${record.display}</span>
+                                                            </div>`;
+                                                        }).join('') : 
+                                                        '<div class="text-center py-3 text-muted"><i class="fas fa-inbox me-1"></i>无最近现金记录</div>'
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="accordion-item border-danger">
+                            <h2 class="accordion-header" id="heading-${index}">
+                                <button class="accordion-button collapsed text-danger" type="button" 
+                                        data-bs-toggle="collapse" data-bs-target="#${collapseId}" 
+                                        aria-expanded="false" aria-controls="${collapseId}">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    <strong>查询失败 - ${result.remark}</strong>
+                                </button>
+                            </h2>
+                            <div id="${collapseId}" class="accordion-collapse collapse" 
+                                 aria-labelledby="heading-${index}" data-bs-parent="#resultsAccordion">
+                                <div class="accordion-body">
+                                    <div class="alert alert-danger">
+                                        <h6><i class="fas fa-exclamation-triangle me-2"></i>查询失败原因</h6>
+                                        <p class="mb-0">${result.error}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            html += '</div>'; // 结束accordion
+
+            document.getElementById('resultsSection').innerHTML = html;
+        }
+
+        // 按变量名称从青龙导入账号
+        function loadQinglongAccountsByName() {
+            const varName = document.getElementById('varNameInput').value.trim();
+            
+            if (!varName) {
+                showAlert('请输入要查询的变量名称', 'warning');
+                return;
+            }
+            
+            document.getElementById('loadingSection').style.display = 'block';
+            
+            const formData = new FormData();
+            formData.append('var_name', varName);
+            
+            fetch('/get_qinglong_cookies_by_name', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                document.getElementById('loadingSection').style.display = 'none';
+                
+                if (data.success) {
+                    if (data.cookies) {
+                        document.getElementById('cookiesInput').value = data.cookies;
+                    }
+                    showAlert(data.message, 'success');
+                } else {
+                    showAlert('导入失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                document.getElementById('loadingSection').style.display = 'none';
+                console.error('导入异常:', error);
+                showAlert('导入异常: ' + error.message, 'danger');
+            });
+        }
+
+        // 保存变量名称
+        function saveVarName() {
+            const varName = document.getElementById('varNameInput').value.trim();
+            
+            if (!varName) {
+                showAlert('请输入要保存的变量名称', 'warning');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('var_name', varName);
+            
+            fetch('/save_var_name', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showAlert('变量名称保存成功', 'success');
+                    loadVarNames(); // 重新加载变量名称列表
+                } else {
+                    showAlert('保存失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('保存变量名称异常:', error);
+                showAlert('保存异常: ' + error.message, 'danger');
+            });
+        }
+
+        // 加载变量名称列表
+        function loadVarNames() {
+            fetch('/get_var_names')
+                .then(r => {
+                    if (!r.ok) throw new Error('Network response was not ok');
+                    return r.json();
+                })
+                .then(data => {
+                    const varNameHistory = document.getElementById('varNameHistory');
+                    const emptyVarNames = document.getElementById('emptyVarNames');
+                    
+                    if (data.success && data.var_names.length > 0) {
+                        emptyVarNames.style.display = 'none';
+                        
+                        let html = '';
+                        data.var_names.forEach(varName => {
+                            html += `
+                                <div class="var-name-item">
+                                    <span class="var-name-text" onclick="useVarName('${varName}')">
+                                        <i class="fas fa-tag me-2 text-muted"></i>${varName}
+                                    </span>
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteVarName('${varName}')">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            `;
+                        });
+                        varNameHistory.querySelector('.card-body').innerHTML = html;
+                    } else {
+                        emptyVarNames.style.display = 'block';
+                        varNameHistory.querySelector('.card-body').innerHTML = '<div class="text-center py-3 text-muted" id="emptyVarNames"><i class="fas fa-inbox me-1"></i>暂无保存的变量名称</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载变量名称失败:', error);
+                });
+        }
+
+        // 使用变量名称
+        function useVarName(varName) {
+            document.getElementById('varNameInput').value = varName;
+        }
+
+        // 删除变量名称
+        function deleteVarName(varName) {
+            if (!confirm(`确定要删除变量名称 "${varName}" 吗？`)) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('var_name', varName);
+            
+            fetch('/delete_var_name', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showAlert('变量名称删除成功', 'success');
+                    loadVarNames(); // 重新加载变量名称列表
+                } else {
+                    showAlert('删除失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('删除变量名称异常:', error);
+                showAlert('删除异常: ' + error.message, 'danger');
+            });
+        }
+
+        // 下载Excel报表 - 修复版
+        function downloadExcel() {
+            const downloadBtn = document.querySelector('#summarySection .btn-light');
+            const originalText = downloadBtn.innerHTML;
+            downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 下载中...';
+            downloadBtn.disabled = true;
+
+            fetch('/download_excel')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('下载失败');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // 创建下载链接
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    
+                    // 使用默认文件名
+                    const filename = `金币数据汇总_${new Date().toLocaleString('zh-CN', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'}).replace(/[\/\s:]/g, '')}.xlsx`;
+                    
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                    
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.disabled = false;
+                    showAlert('报表下载成功', 'success');
+                })
+                .catch(error => {
+                    console.error('下载失败:', error);
+                    downloadBtn.innerHTML = originalText;
+                    downloadBtn.disabled = false;
+                    showAlert('下载失败: ' + error.message, 'danger');
+                });
+        }
+
+        // 清空输入
+        function clearInput() {
+            if (confirm('确定要清空所有输入内容吗？')) {
+                document.getElementById('cookiesInput').value = '';
+                document.getElementById('varNameInput').value = '';
+                document.getElementById('resultsSection').innerHTML = '';
+                document.getElementById('summarySection').style.display = 'none';
+                
+                showAlert('输入内容已清空', 'info');
+            }
+        }
+
+        // 加载历史记录
+        function loadHistory() {
+            fetch('/get_history')
+                .then(r => {
+                    if (!r.ok) throw new Error('Network response was not ok');
+                    return r.json();
+                })
+                .then(data => {
+                    const historyContent = document.getElementById('historyContent');
+                    if (data.success && data.data) {
+                        historyContent.innerHTML = `
+                            <div class="alert alert-info">
+                                <h6><i class="fas fa-clock me-2"></i>上次查询记录</h6>
+                                <p class="mb-1"><strong>查询时间:</strong> ${data.data.query_time}</p>
+                                <p class="mb-1"><strong>查询账号数:</strong> ${data.data.results ? data.data.results.length : 0}</p>
+                                <p class="mb-1"><strong>成功账号:</strong> ${data.data.results ? data.data.results.filter(r => r.success).length : 0}</p>
+                                <p class="mb-1"><strong>今日总金币:</strong> ${data.data.total_today_coin ? data.data.total_today_coin.toLocaleString() : 0}</p>
+                                <p class="mb-1"><strong>今日总金额:</strong> ${data.data.total_today_money ? data.data.total_today_money.toFixed(2) : '0.00'}元</p>
+                            </div>
+                        `;
+                    } else {
+                        historyContent.innerHTML = `
+                            <div class="text-center py-5 text-muted">
+                                <i class="fas fa-history fa-3x mb-3"></i>
+                                <p>暂无查询历史记录</p>
+                                <small>执行查询后，历史记录将显示在这里</small>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    console.error('加载历史记录失败:', error);
+                    document.getElementById('historyContent').innerHTML = `
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>加载历史记录失败
+                        </div>
+                    `;
+                });
+        }
+
+        // 加载青龙配置
+        function loadQinglongConfig() {
+            fetch('/get_qinglong_config')
+                .then(r => {
+                    if (!r.ok) throw new Error('Network response was not ok');
+                    return r.json();
+                })
+                .then(data => {
+                    if (data.success && data.config) {
+                        document.getElementById('ql_url').value = data.config.ql_url || '';
+                        document.getElementById('client_id').value = data.config.client_id || '';
+                        document.getElementById('client_secret').value = data.config.client_secret || '';
+                        document.getElementById('ql_remark').value = data.config.remark || '';
+                    }
+                })
+                .catch(error => {
+                    console.error('加载青龙配置失败:', error);
+                });
+        }
+
+        // 保存青龙配置
+        document.getElementById('qinglongForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> 保存中...';
+            submitBtn.disabled = true;
+            
+            const formData = new FormData();
+            formData.append('ql_url', document.getElementById('ql_url').value);
+            formData.append('client_id', document.getElementById('client_id').value);
+            formData.append('client_secret', document.getElementById('client_secret').value);
+            formData.append('remark', document.getElementById('ql_remark').value);
+            
+            fetch('/save_qinglong_config', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                
+                if (data.success) {
+                    showAlert('配置保存成功', 'success');
+                } else {
+                    showAlert('保存失败: ' + data.message, 'danger');
+                }
+            })
+            .catch(error => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+                console.error('保存异常:', error);
+                showAlert('保存异常: ' + error.message, 'danger');
+            });
+        });
+
+        // 测试青龙连接
+        function testQinglongConnection() {
+            const ql_url = document.getElementById('ql_url').value;
+            const client_id = document.getElementById('client_id').value;
+            const client_secret = document.getElementById('client_secret').value;
+            
+            if (!ql_url || !client_id || !client_secret) {
+                showAlert('请先填写完整的青龙配置信息', 'warning');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('qinglongStatus');
+            statusDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-spinner fa-spin me-2"></i>测试连接中...</div>';
+            
+            // 先保存配置
+            const formData = new FormData();
+            formData.append('ql_url', ql_url);
+            formData.append('client_id', client_id);
+            formData.append('client_secret', client_secret);
+            formData.append('remark', document.getElementById('ql_remark').value);
+            
+            fetch('/save_qinglong_config', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => {
+                if (!r.ok) throw new Error('Network response was not ok');
+                return r.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // 然后测试连接
+                    const testFormData = new FormData();
+                    testFormData.append('var_name', 'test');
+                    
+                    fetch('/get_qinglong_cookies_by_name', {
+                        method: 'POST',
+                        body: testFormData
+                    })
+                    .then(r => {
+                        if (!r.ok) throw new Error('Network response was not ok');
+                        return r.json();
+                    })
+                    .then(data => {
+                        if (data.success || data.message.includes('未找到匹配的变量')) {
+                            statusDiv.innerHTML = `<div class="alert alert-success">
+                                <h6><i class="fas fa-check-circle me-2"></i>连接成功</h6>
+                                <p class="mb-0">青龙面板连接正常，可以正常使用导入功能</p>
+                            </div>`;
+                        } else {
+                            statusDiv.innerHTML = `<div class="alert alert-danger">
+                                <h6><i class="fas fa-times-circle me-2"></i>连接失败</h6>
+                                <p class="mb-0">${data.message}</p>
+                            </div>`;
+                        }
+                    })
+                    .catch(error => {
+                        statusDiv.innerHTML = `<div class="alert alert-danger">
+                            <h6><i class="fas fa-times-circle me-2"></i>连接异常</h6>
+                            <p class="mb-0">${error.message}</p>
+                        </div>`;
+                    });
+                } else {
+                    statusDiv.innerHTML = `<div class="alert alert-danger">
+                        <h6><i class="fas fa-times-circle me-2"></i>保存配置失败</h6>
+                        <p class="mb-0">${data.message}</p>
+                    </div>`;
+                }
+            })
+            .catch(error => {
+                statusDiv.innerHTML = `<div class="alert alert-danger">
+                    <h6><i class="fas fa-times-circle me-2"></i>连接异常</h6>
+                    <p class="mb-0">${error.message}</p>
+                </div>`;
+            });
+        }
+
+        // 显示提示信息
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // 添加到页面顶部
+            const mainContent = document.querySelector('.main-content');
+            mainContent.insertBefore(alertDiv, mainContent.firstChild);
+            
+            // 5秒后自动消失
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
