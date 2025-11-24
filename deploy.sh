@@ -1,9 +1,8 @@
-# 创建优化后的部署脚本
-cat > deploy_optimized.sh << 'EOF'
+# 创建使用国内镜像源的部署脚本
+cat > deploy_china.sh << 'EOF'
 #!/bin/bash
 
-# 快手金币统计系统一键部署脚本 - 优化内存版本
-# 适用于CentOS, Ubuntu等已安装Docker的Linux系统
+# 快手金币统计系统一键部署脚本 - 国内镜像优化版
 
 set -e
 
@@ -74,24 +73,25 @@ download_files() {
     curl -sSL -o templates/index.html "$BASE_URL/templates/index.html"
     curl -sSL -o templates/login.html "$BASE_URL/templates/login.html"
     
-    # 创建优化的Dockerfile - 减少内存使用
+    # 创建使用国内镜像的Dockerfile
     cat > Dockerfile << 'DOCKERFILEEOF'
-FROM python:3.9-alpine
+FROM python:3.9-slim
 
 WORKDIR /app
 
-# 安装系统依赖 - Alpine版本，更轻量
-RUN apk update && apk add --no-cache \
-    gcc \
-    musl-dev \
-    linux-headers \
-    && rm -rf /var/cache/apk/*
+# 使用国内APT镜像源和PyPI镜像
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends gcc g++ && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # 复制依赖文件
 COPY requirements.txt .
 
-# 安装Python依赖 - 使用国内镜像加速
-RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 使用国内PyPI镜像安装依赖
+RUN pip install --no-cache-dir -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn
 
 # 复制应用文件
 COPY . .
@@ -106,26 +106,6 @@ EXPOSE 5000
 CMD ["python", "app.py"]
 DOCKERFILEEOF
 
-    # 创建docker-compose.yml
-    cat > docker-compose.yml << 'COMPOSEEOF'
-version: '3.8'
-
-services:
-  ks-coin-system:
-    build: .
-    container_name: ks-coin-system
-    restart: unless-stopped
-    ports:
-      - "5000:5000"
-    volumes:
-      - ./data:/app/data
-      - ./logs:/app/logs
-    environment:
-      - TZ=Asia/Shanghai
-    mem_limit: 512m
-    mem_reservation: 256m
-COMPOSEEOF
-
     # 创建启动脚本
     cat > start.sh << 'STARTEOF'
 #!/bin/bash
@@ -138,9 +118,9 @@ echo "启动快手金币统计系统..."
 docker stop ks-coin-system 2>/dev/null || true
 docker rm ks-coin-system 2>/dev/null || true
 
-# 构建镜像（使用更少内存的方式）
-echo "构建Docker镜像（优化内存版本）..."
-docker build --memory=512m --memory-swap=1g -t ks-coin-system .
+# 构建镜像
+echo "构建Docker镜像..."
+docker build -t ks-coin-system .
 
 # 启动新容器
 docker run -d \
@@ -150,8 +130,6 @@ docker run -d \
     -v /opt/ks-coin-system/data:/app/data \
     -v /opt/ks-coin-system/logs:/app/logs \
     -e TZ=Asia/Shanghai \
-    --memory=512m \
-    --memory-swap=1g \
     ks-coin-system
 
 echo "系统启动完成!"
@@ -177,18 +155,6 @@ STOPEOF
 
     chmod +x stop.sh
 
-    # 创建重启脚本
-    cat > restart.sh << 'RESTARTEOF'
-#!/bin/bash
-
-cd /opt/ks-coin-system
-./stop.sh
-sleep 2
-./start.sh
-RESTARTEOF
-
-    chmod +x restart.sh
-
     log_info "项目文件下载完成"
 }
 
@@ -197,28 +163,24 @@ check_resources() {
     log_info "检查系统资源..."
     
     # 检查内存
-    total_mem=$(free -m | awk 'NR==2{print $2}')
-    available_mem=$(free -m | awk 'NR==2{print $7}')
+    total_mem=$(free -m 2>/dev/null | awk 'NR==2{print $2}' || echo "未知")
+    available_mem=$(free -m 2>/dev/null | awk 'NR==2{print $7}' || echo "未知")
     
     log_info "总内存: ${total_mem}MB"
     log_info "可用内存: ${available_mem}MB"
     
-    if [ "$available_mem" -lt "512" ]; then
-        log_warn "可用内存较少，建议增加系统内存或交换空间"
-    fi
-    
     # 检查磁盘空间
-    disk_space=$(df /opt/ks-coin-system | awk 'NR==2{print $4}')
+    disk_space=$(df /opt/ks-coin-system 2>/dev/null | awk 'NR==2{print $4}' || echo "未知")
     log_info "可用磁盘空间: ${disk_space}"
 }
 
 # 构建和启动容器
 build_and_start() {
-    log_info "开始构建Docker镜像（优化内存版本）..."
+    log_info "开始构建Docker镜像..."
     
     cd /opt/ks-coin-system
     
-    # 使用优化参数构建镜像
+    # 构建镜像
     ./start.sh
 }
 
@@ -229,18 +191,21 @@ show_deploy_info() {
     log_info "=========================================="
     echo ""
     echo -e "${GREEN}系统信息:${NC}"
-    echo "访问地址: http://$(curl -s ifconfig.me 2>/dev/null || echo "服务器IP"):5000"
+    
+    # 获取服务器IP
+    SERVER_IP=$(curl -s ifconfig.me 2>/dev/null || hostname -I 2>/dev/null | awk '{print $1}' || echo "服务器IP")
+    echo "访问地址: http://${SERVER_IP}:5000"
     echo "默认账号: admin"
     echo "默认密码: admin123"
     echo ""
     echo -e "${GREEN}管理命令:${NC}"
     echo "启动系统: cd /opt/ks-coin-system && ./start.sh"
     echo "停止系统: cd /opt/ks-coin-system && ./stop.sh"
-    echo "重启系统: cd /opt/ks-coin-system && ./restart.sh"
     echo "查看日志: docker logs ks-coin-system"
+    echo "查看状态: docker ps | grep ks-coin-system"
     echo ""
     echo -e "${YELLOW}安全提醒:${NC}"
-    echo "1. 首次登录后请及时在代码中修改默认密码"
+    echo "1. 首次登录后请及时修改默认密码"
     echo "2. 建议配置防火墙，仅允许可信IP访问5000端口"
     echo "3. 定期备份 /opt/ks-coin-system/data/ 目录"
     echo ""
@@ -248,7 +213,7 @@ show_deploy_info() {
 
 # 检查端口是否被占用
 check_port() {
-    if netstat -tuln 2>/dev/null | grep ':5000 ' > /dev/null; then
+    if command -v netstat &> /dev/null && netstat -tuln 2>/dev/null | grep ':5000 ' > /dev/null; then
         log_warn "端口5000已被占用"
         PID=$(lsof -ti:5000 2>/dev/null || echo "")
         if [ ! -z "$PID" ]; then
@@ -256,6 +221,8 @@ check_port() {
             kill -9 $PID
             sleep 2
         fi
+    elif command -v ss &> /dev/null && ss -tuln 2>/dev/null | grep ':5000 ' > /dev/null; then
+        log_warn "端口5000已被占用"
     fi
 }
 
@@ -270,7 +237,17 @@ main_deploy() {
     create_directories
     download_files
     build_and_start
-    show_deploy_info
+    
+    # 等待容器启动
+    sleep 5
+    
+    # 检查容器状态
+    if docker ps | grep -q ks-coin-system; then
+        show_deploy_info
+    else
+        log_error "容器启动失败，请检查日志: docker logs ks-coin-system"
+        exit 1
+    fi
     
     log_info "部署脚本执行完毕!"
 }
@@ -279,5 +256,5 @@ main_deploy() {
 main_deploy
 EOF
 
-chmod +x deploy_optimized.sh
-./deploy_optimized.sh
+chmod +x deploy_china.sh
+./deploy_china.sh
